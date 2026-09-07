@@ -15,7 +15,7 @@ jobs:
     name: SAST (gosec)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: securecodewarrior/gosec-action@v1
 
@@ -23,7 +23,7 @@ jobs:
     name: Dependency Scan (govulncheck)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v7
         with:
