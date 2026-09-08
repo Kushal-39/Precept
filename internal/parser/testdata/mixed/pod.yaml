@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api
+  namespace: default
+  labels:
+    app: precept
+spec:
+  containers:
+    - name: api
+      image: precept:1.0.0
+      securityContext:
+        runAsNonRoot: true
+  restartPolicy: Always

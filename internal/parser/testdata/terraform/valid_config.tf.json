@@ -1,0 +1,19 @@
+{
+  "resource": {
+    "aws_s3_bucket": {
+      "logs": {
+        "bucket": "precept-logs",
+        "acl": "private"
+      }
+    },
+    "aws_iam_role": {
+      "reader": {
+        "name": "reader-role",
+        "assume_role_policy": "{}"
+      }
+    }
+  },
+  "terraform": {
+    "required_version": ">= 1.5.0"
+  }
+}

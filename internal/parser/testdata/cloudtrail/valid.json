@@ -1,0 +1,36 @@
+{
+  "Records": [
+    {
+      "eventVersion": "1.08",
+      "eventID": "a1111111-2222-3333-4444-555555555555",
+      "eventTime": "2026-09-08T10:00:00Z",
+      "eventName": "CreateBucket",
+      "eventSource": "s3.amazonaws.com",
+      "awsRegion": "eu-west-1",
+      "sourceIPAddress": "203.0.113.10",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDAEXAMPLE",
+        "userName": "deploy-bot"
+      },
+      "requestParameters": {
+        "bucketName": "precept-data"
+      },
+      "responseElements": {
+        "location": "/precept-data"
+      }
+    },
+    {
+      "eventVersion": "1.08",
+      "eventID": "b6666666-7777-8888-9999-000000000000",
+      "eventTime": "2026-09-08T10:05:00Z",
+      "eventName": "PutBucketPolicy",
+      "eventSource": "s3.amazonaws.com",
+      "awsRegion": "eu-west-1",
+      "requestParameters": {
+        "bucketName": "precept-data"
+      },
+      "errorCode": "AccessDenied"
+    }
+  ]
+}

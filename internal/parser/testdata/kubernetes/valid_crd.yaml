@@ -1,0 +1,8 @@
+apiVersion: precept.io/v1
+kind: PreceptPolicy
+metadata:
+  name: custom-crd
+spec:
+  enforcement: hard
+  rules:
+    - deny-public-buckets

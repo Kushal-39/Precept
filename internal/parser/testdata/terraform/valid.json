@@ -1,0 +1,45 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.9.5",
+  "lineage": "9f3e6a2b-1111-2222-3333-444455556666",
+  "outputs": {},
+  "checks": null,
+  "values": {
+    "outputs": {},
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_s3_bucket.data",
+          "mode": "managed",
+          "type": "aws_s3_bucket",
+          "name": "data",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "bucket": "precept-data",
+            "acl": "private",
+            "versioning": [
+              {
+                "enabled": true
+              }
+            ]
+          }
+        },
+        {
+          "address": "aws_s3_bucket_public_access_block.data",
+          "mode": "managed",
+          "type": "aws_s3_bucket_public_access_block",
+          "name": "data",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "bucket": "precept-data",
+            "block_public_acls": true,
+            "block_public_policy": true
+          }
+        }
+      ]
+    }
+  },
+  "sensitive_values": {}
+}

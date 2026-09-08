@@ -1,0 +1,67 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.9.5",
+  "values": {
+    "outputs": {},
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_iam_role.app",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "app",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "name": "app-role",
+            "max_session_duration": 3600
+          }
+        }
+      ],
+      "child_modules": [
+        {
+          "address": "module.network",
+          "resources": [
+            {
+              "address": "module.network.aws_security_group.app",
+              "mode": "managed",
+              "type": "aws_security_group",
+              "name": "app",
+              "provider_name": "registry.terraform.io/hashicorp/aws",
+              "schema_version": 1,
+              "values": {
+                "name": "app-sg",
+                "ingress": [
+                  {
+                    "from_port": 443,
+                    "to_port": 443,
+                    "cidr_blocks": ["0.0.0.0/0"]
+                  }
+                ]
+              }
+            }
+          ],
+          "child_modules": [
+            {
+              "address": "module.network.module.sub",
+              "resources": [
+                {
+                  "address": "module.network.module.sub.aws_subnet.private",
+                  "mode": "managed",
+                  "type": "aws_subnet",
+                  "name": "private",
+                  "provider_name": "registry.terraform.io/hashicorp/aws",
+                  "schema_version": 1,
+                  "values": {
+                    "cidr_block": "10.0.2.0/24",
+                    "map_public_ip_on_launch": false
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

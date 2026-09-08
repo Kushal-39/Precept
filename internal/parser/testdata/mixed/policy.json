@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Id": "precept-read-policy",
+  "Statement": [
+    {
+      "Sid": "AllowObjectRead",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::precept-data/*"]
+    },
+    {
+      "Sid": "DenyInsecureDelete",
+      "Effect": "Deny",
+      "Action": "s3:DeleteObject",
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "false"
+        }
+      }
+    }
+  ]
+}

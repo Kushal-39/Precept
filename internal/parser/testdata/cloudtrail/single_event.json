@@ -1,0 +1,16 @@
+{
+  "eventVersion": "1.08",
+  "eventID": "c1212121-4343-5656-7878-909090909090",
+  "eventTime": "2026-09-08T11:00:00Z",
+  "eventName": "AssumeRole",
+  "eventSource": "sts.amazonaws.com",
+  "awsRegion": "eu-west-1",
+  "userIdentity": {
+    "type": "AssumedRole",
+    "principalId": "AROAEXAMPLE:session-1"
+  },
+  "requestParameters": {
+    "roleArn": "arn:aws:iam::123456789012:role/deployer",
+    "roleSessionName": "session-1"
+  }
+}
