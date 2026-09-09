@@ -1,0 +1,18 @@
+{
+  "Version": "2012-10-17",
+  "Id": "wildcard-admin-policy",
+  "Statement": [
+    {
+      "Sid": "FullAdmin",
+      "Effect": "Allow",
+      "Action": "*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "PassAnyRole",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "*"
+    }
+  ]
+}
