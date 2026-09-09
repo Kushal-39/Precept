@@ -8,8 +8,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/precept/precept/internal/analyzer"
 	"github.com/precept/precept/internal/fs"
 	"github.com/precept/precept/internal/models"
+	"github.com/precept/precept/internal/output"
+	"github.com/precept/precept/internal/parser"
 )
 
 var (
@@ -23,14 +26,15 @@ var scanCmd = &cobra.Command{
 	Short: "Scan infrastructure for security misconfigurations",
 	Long: `Scan analyses Infrastructure-as-Code at the target path for security
 misconfigurations. Supported sources include Terraform configurations,
-Kubernetes manifests, and IAM policy documents.
+Kubernetes manifests, IAM policy documents, and CloudTrail event logs.
 
 Every detected issue becomes a scored finding. When the highest risk score
-exceeds the configured threshold the command fails, allowing CI/CD pipelines
-to treat posture regressions as hard errors.`,
-	Args:         cobra.ExactArgs(1),
-	RunE:         runScan,
-	SilenceUsage: true,
+reaches the configured threshold the command exits 1, allowing CI/CD
+pipelines to treat posture regressions as hard errors.`,
+	Args:          cobra.ExactArgs(1),
+	RunE:          runScan,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 func init() {
@@ -48,10 +52,51 @@ func runScan(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	if scanVerbose {
-		fmt.Printf("Output format: %s\n", opts.OutputFormat)
+
+	result, err := parser.Parse(opts.TargetPath)
+	if err != nil {
+		return fmt.Errorf("scan target: %w", err)
 	}
-	fmt.Printf("Scanning target: %s with threshold %d\n", opts.TargetPath, opts.Threshold)
+	if scanVerbose {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Parsed %d files, %d resources, skipped %d, %d parse errors\n",
+			len(result.Files), len(result.Resources), len(result.Skipped), len(result.Errors))
+	}
+	for _, pe := range result.Errors {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "parse warning: %s\n", pe.Error())
+	}
+
+	if len(result.Resources) == 0 {
+		if len(result.Errors) > 0 {
+			return fmt.Errorf("no resources could be parsed from %s", opts.TargetPath)
+		}
+		fmt.Println("No resources found to scan")
+		return nil
+	}
+
+	registry := analyzer.NewRegistry()
+	registry.Register(
+		analyzer.NewIAMAnalyzer(),
+		analyzer.NewNetworkAnalyzer(),
+		analyzer.NewStorageAnalyzer(),
+		analyzer.NewLoggingAnalyzer(),
+	)
+	findings := registry.AnalyzeBatch(result.Resources)
+	analyzer.AssignIDs(findings)
+
+	switch opts.OutputFormat {
+	case models.OutputFormatJSON:
+		rendered, err := output.FormatJSON(findings)
+		if err != nil {
+			return fmt.Errorf("format findings: %w", err)
+		}
+		fmt.Println(rendered)
+	default:
+		fmt.Print(output.FormatTable(findings, opts.Threshold))
+	}
+
+	if maxScore := analyzer.MaxScore(findings); maxScore >= opts.Threshold {
+		return &ExitError{Code: 1}
+	}
 	return nil
 }
 

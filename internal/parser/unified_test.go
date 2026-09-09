@@ -17,12 +17,13 @@ func TestParseDirectoryMixed(t *testing.T) {
 		t.Fatalf("Parse() unexpected error: %v", err)
 	}
 	// mixed tree: terraform_state.json (2), stack.tf.json (2),
-	// pod.yaml (1), policy.json (2), events.json (2), nested/more.yaml (3)
-	if len(result.Resources) != 12 {
-		t.Errorf("Parse() returned %d resources, want 12", len(result.Resources))
+	// pod.yaml (1), policy.json (2), admin_policy.json (2),
+	// events.json (2), nested/more.yaml (3)
+	if len(result.Resources) != 14 {
+		t.Errorf("Parse() returned %d resources, want 14", len(result.Resources))
 	}
-	if len(result.Files) != 6 {
-		t.Errorf("Parse() parsed %d files, want 6", len(result.Files))
+	if len(result.Files) != 7 {
+		t.Errorf("Parse() parsed %d files, want 7", len(result.Files))
 	}
 	if len(result.Errors) != 0 {
 		t.Errorf("Parse() errors = %v, want none", result.Errors)
@@ -37,7 +38,7 @@ func TestParseDirectoryMixed(t *testing.T) {
 	want := map[models.ResourceType]int{
 		models.ResourceTypeTerraform:  4,
 		models.ResourceTypeKubernetes: 4,
-		models.ResourceTypeIAM:        2,
+		models.ResourceTypeIAM:        4,
 		models.ResourceTypeCloudTrail: 2,
 	}
 	for format, count := range want {

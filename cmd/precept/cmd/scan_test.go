@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -116,41 +115,15 @@ func TestBuildScanOptions(t *testing.T) {
 	}
 }
 
-func TestScanCommand(t *testing.T) {
+func TestScanCommandValidation(t *testing.T) {
 	dir := t.TempDir()
 
 	tests := []struct {
 		name        string
 		args        []string
-		wantOut     []string
 		wantErr     bool
 		errContains string
 	}{
-		{
-			name:    "valid defaults",
-			args:    []string{dir},
-			wantOut: []string{fmt.Sprintf("Scanning target: %s with threshold %d", dir, models.DefaultThreshold)},
-		},
-		{
-			name:    "custom threshold and output",
-			args:    []string{"--threshold=42", "--output=json", dir},
-			wantOut: []string{fmt.Sprintf("Scanning target: %s with threshold 42", dir)},
-		},
-		{
-			name:    "threshold zero boundary",
-			args:    []string{"--threshold=0", dir},
-			wantOut: []string{fmt.Sprintf("Scanning target: %s with threshold 0", dir)},
-		},
-		{
-			name:    "threshold hundred boundary",
-			args:    []string{"--threshold=100", dir},
-			wantOut: []string{fmt.Sprintf("Scanning target: %s with threshold 100", dir)},
-		},
-		{
-			name:    "verbose prints extra context",
-			args:    []string{"--verbose", "--output=json", dir},
-			wantOut: []string{"Output format: json", fmt.Sprintf("Scanning target: %s with threshold %d", dir, models.DefaultThreshold)},
-		},
 		{
 			name:        "missing target argument",
 			args:        nil,
@@ -209,10 +182,43 @@ func TestScanCommand(t *testing.T) {
 			if err != nil {
 				t.Fatalf("scan %v unexpected error: %v", tt.args, err)
 			}
-			for _, want := range tt.wantOut {
-				if !strings.Contains(out, want) {
-					t.Errorf("output %q does not contain %q", out, want)
-				}
+			_ = out
+		})
+	}
+}
+
+func TestScanCommandNoResources(t *testing.T) {
+	dir := t.TempDir()
+	out, err := runScanCommand(t, dir)
+	if err != nil {
+		t.Fatalf("scan on empty dir error = %v, want nil", err)
+	}
+	if !strings.Contains(out, "No resources found to scan") {
+		t.Errorf("output = %q, want no-resources message", out)
+	}
+}
+
+func TestExitErrorContract(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		err        *ExitError
+		wantCode   int
+		wantSilent bool
+	}{
+		{name: "threshold failure", err: &ExitError{Code: 1}, wantCode: 1, wantSilent: true},
+		{name: "silent with code", err: &ExitError{Code: 2}, wantCode: 2, wantSilent: true},
+		{name: "with message", err: &ExitError{Code: 1, Message: "boom"}, wantCode: 1, wantSilent: false},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if tt.err.Error() != tt.err.Message {
+				t.Errorf("Error() = %q, want %q", tt.err.Error(), tt.err.Message)
+			}
+			if got := tt.err.Silent(); got != tt.wantSilent {
+				t.Errorf("Silent() = %v, want %v", got, tt.wantSilent)
 			}
 		})
 	}
@@ -241,5 +247,24 @@ func TestExecuteFailureMapsToExitOne(t *testing.T) {
 	})
 	if err == nil {
 		t.Error("Execute() error = nil, want error (main maps error to exit 1)")
+	}
+}
+
+func TestVerboseSummaryOnStderr(t *testing.T) {
+	fixtureDir := filepath.Join("..", "..", "..", "internal", "parser", "testdata", "mixed")
+	resetScanFlags()
+	scanVerbose = true
+	var err error
+	out := captureStdout(t, func() {
+		rootCmd.SetArgs([]string{"scan", "--verbose", "--threshold=100", fixtureDir})
+		err = rootCmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	// stdout stays clean for the findings table; the parse summary goes
+	// to stderr and is not captured here.
+	if !strings.Contains(out, "SEVERITY") || !strings.Contains(out, "RULE") {
+		t.Errorf("table output %q missing headers", out)
 	}
 }

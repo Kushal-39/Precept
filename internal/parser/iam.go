@@ -69,6 +69,35 @@ type iamPolicyDocument struct {
 	Statement json.RawMessage `json:"Statement"`
 }
 
+// ParseStatements validates data as an IAM policy document and returns
+// its statements in document order. It accepts single-statement objects
+// and statement arrays, enforcing the same strict decoding as policy
+// files. Embedded documents inside Terraform resources go through the
+// same validation this way.
+func ParseStatements(data []byte) ([]Statement, error) {
+	var doc iamPolicyDocument
+	if err := decodeJSONStrict(data, &doc); err != nil {
+		return nil, fmt.Errorf("invalid iam policy: %w", err)
+	}
+	if len(doc.Statement) == 0 {
+		return nil, fmt.Errorf("%w: Statement", ErrMissingField)
+	}
+	statements, err := decodeIAMStatements(doc.Statement)
+	if err != nil {
+		return nil, err
+	}
+	for i := range statements {
+		if err := validateIAMStatement(&statements[i]); err != nil {
+			return nil, fmt.Errorf("statement %d: %w", i, err)
+		}
+	}
+	return statements, nil
+}
+
+// Statement is one validated IAM policy statement with list-normalised
+// string-or-array fields.
+type Statement = iamStatement
+
 func parseIAMData(data []byte, path string) ([]*models.Resource, error) {
 	var doc iamPolicyDocument
 	if err := decodeJSONStrict(data, &doc); err != nil {
@@ -81,12 +110,14 @@ func parseIAMData(data []byte, path string) ([]*models.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
+	for i := range statements {
+		if err := validateIAMStatement(&statements[i]); err != nil {
+			return nil, fmt.Errorf("statement %d: %w", i, err)
+		}
+	}
 	out := make([]*models.Resource, 0, len(statements))
 	for i := range statements {
 		stmt := &statements[i]
-		if err := validateIAMStatement(stmt); err != nil {
-			return nil, fmt.Errorf("statement %d: %w", i, err)
-		}
 		name := stmt.Sid
 		if name == "" {
 			name = fmt.Sprintf("statement-%d", i)
