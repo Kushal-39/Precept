@@ -37,6 +37,7 @@ func resetScanFlags() {
 	scanThreshold = models.DefaultThreshold
 	scanOutput = models.OutputFormatTable
 	scanVerbose = false
+	scanPolicies = defaultPoliciesDir
 }
 
 func runScanCommand(t *testing.T, args ...string) (string, error) {
@@ -187,8 +188,7 @@ func TestScanCommandValidation(t *testing.T) {
 	}
 }
 
-func TestScanCommandNoResources(t *testing.T) {
-	dir := t.TempDir()
+func TestScanCommandNoResources(t *testing.T) {	dir := t.TempDir()
 	out, err := runScanCommand(t, dir)
 	if err != nil {
 		t.Fatalf("scan on empty dir error = %v, want nil", err)
@@ -256,7 +256,7 @@ func TestVerboseSummaryOnStderr(t *testing.T) {
 	scanVerbose = true
 	var err error
 	out := captureStdout(t, func() {
-		rootCmd.SetArgs([]string{"scan", "--verbose", "--threshold=100", fixtureDir})
+		rootCmd.SetArgs([]string{"scan", "--verbose", "--threshold=100", "--policies=../../../policies", fixtureDir})
 		err = rootCmd.Execute()
 	})
 	if err != nil {
@@ -266,5 +266,16 @@ func TestVerboseSummaryOnStderr(t *testing.T) {
 	// to stderr and is not captured here.
 	if !strings.Contains(out, "SEVERITY") || !strings.Contains(out, "RULE") {
 		t.Errorf("table output %q missing headers", out)
+	}
+}
+
+func TestScanCommandMissingPoliciesFailsClosed(t *testing.T) {
+	fixture := filepath.Join("..", "..", "..", "internal", "parser", "testdata", "iam", "wildcard_admin.json")
+	_, err := runScanCommand(t, "--threshold=100", "--policies="+filepath.Join(t.TempDir(), "missing"), fixture)
+	if err == nil {
+		t.Fatal("scan with missing policies directory should fail closed")
+	}
+	if !strings.Contains(err.Error(), "policies") {
+		t.Errorf("error = %q, want mention of policies", err.Error())
 	}
 }

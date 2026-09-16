@@ -1,12 +1,18 @@
-.PHONY: all build test lint security tidy verify clean
+.PHONY: all build test policy-test policy-fmt lint security tidy verify clean
 
-all: build test lint security
+all: build test policy-test lint security
 
 build:
 	go build ./...
 
 test:
 	go test -race -shuffle=on -coverprofile=coverage.out ./...
+
+policy-test:
+	opa test policies/
+
+policy-fmt:
+	opa fmt --write policies/
 
 lint:
 	golangci-lint run ./...

@@ -24,6 +24,12 @@ jobs:
 
       - run: go test -race -shuffle=on -coverprofile=coverage.out ./...
 
+      - uses: open-policy-agent/setup-opa@v2
+        with:
+          version: 1.1.0
+
+      - run: opa test policies/
+
       - uses: codecov/codecov-action@v7
         with:
           files: coverage.out

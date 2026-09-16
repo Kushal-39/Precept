@@ -9,10 +9,12 @@ import (
 
 const fixtureRoot = "../../../internal/parser/testdata"
 
+const fixturePolicies = "../../../policies"
+
 func TestIntegrationTerraformFileAllDomains(t *testing.T) {
 	resetScanFlags()
 	scanThreshold = 100
-	out, err := runScanCommand(t, "--threshold=100", filepath.Join(fixtureRoot, "terraform", "valid_findings.json"))
+	out, err := runScanCommand(t, "--threshold=100", "--policies="+fixturePolicies, filepath.Join(fixtureRoot, "terraform", "valid_findings.json"))
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}
@@ -27,7 +29,7 @@ func TestIntegrationTerraformFileAllDomains(t *testing.T) {
 }
 
 func TestIntegrationIAMFile(t *testing.T) {
-	out, err := runScanCommand(t, "--threshold=100", filepath.Join(fixtureRoot, "iam", "wildcard_admin.json"))
+	out, err := runScanCommand(t, "--threshold=100", "--policies="+fixturePolicies, filepath.Join(fixtureRoot, "iam", "wildcard_admin.json"))
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}
@@ -40,7 +42,7 @@ func TestIntegrationIAMFile(t *testing.T) {
 }
 
 func TestIntegrationDirectoryCombined(t *testing.T) {
-	out, err := runScanCommand(t, "--threshold=100", filepath.Join(fixtureRoot, "mixed"))
+	out, err := runScanCommand(t, "--threshold=100", "--policies="+fixturePolicies, filepath.Join(fixtureRoot, "mixed"))
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}
@@ -50,7 +52,7 @@ func TestIntegrationDirectoryCombined(t *testing.T) {
 }
 
 func TestIntegrationThresholdFails(t *testing.T) {
-	out, err := runScanCommand(t, filepath.Join(fixtureRoot, "iam", "wildcard_admin.json"))
+	out, err := runScanCommand(t, "--policies="+fixturePolicies, filepath.Join(fixtureRoot, "iam", "wildcard_admin.json"))
 	if err == nil {
 		t.Fatalf("scan with default threshold 70 should fail on CRITICAL finding, output:\n%s", out)
 	}
@@ -73,7 +75,7 @@ func TestIntegrationThresholdZeroAlwaysFails(t *testing.T) {
 }
 
 func TestIntegrationThresholdZeroFailsWithFindings(t *testing.T) {
-	_, err := runScanCommand(t, "--threshold=0", filepath.Join(fixtureRoot, "iam", "wildcard_admin.json"))
+	_, err := runScanCommand(t, "--threshold=0", "--policies="+fixturePolicies, filepath.Join(fixtureRoot, "iam", "wildcard_admin.json"))
 	if err == nil {
 		t.Fatal("threshold=0 with findings should exit 1")
 	}
@@ -84,7 +86,7 @@ func TestIntegrationThresholdZeroFailsWithFindings(t *testing.T) {
 }
 
 func TestIntegrationJSONOutputValid(t *testing.T) {
-	out, err := runScanCommand(t, "--output=json", "--threshold=100", filepath.Join(fixtureRoot, "terraform", "valid_findings.json"))
+	out, err := runScanCommand(t, "--output=json", "--threshold=100", "--policies="+fixturePolicies, filepath.Join(fixtureRoot, "terraform", "valid_findings.json"))
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}
@@ -123,7 +125,7 @@ func TestIntegrationJSONOutputValid(t *testing.T) {
 }
 
 func TestIntegrationTableOutputHeaders(t *testing.T) {
-	out, err := runScanCommand(t, "--threshold=100", filepath.Join(fixtureRoot, "terraform", "valid_findings.json"))
+	out, err := runScanCommand(t, "--threshold=100", "--policies="+fixturePolicies, filepath.Join(fixtureRoot, "terraform", "valid_findings.json"))
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}
@@ -135,7 +137,7 @@ func TestIntegrationTableOutputHeaders(t *testing.T) {
 }
 
 func TestIntegrationSummaryPluralization(t *testing.T) {
-	out, err := runScanCommand(t, "--threshold=100", filepath.Join(fixtureRoot, "iam", "wildcard_admin.json"))
+	out, err := runScanCommand(t, "--threshold=100", "--policies="+fixturePolicies, filepath.Join(fixtureRoot, "iam", "wildcard_admin.json"))
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}

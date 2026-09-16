@@ -13,12 +13,16 @@ import (
 	"github.com/precept/precept/internal/models"
 	"github.com/precept/precept/internal/output"
 	"github.com/precept/precept/internal/parser"
+	"github.com/precept/precept/internal/policy"
 )
+
+const defaultPoliciesDir = "policies"
 
 var (
 	scanThreshold int
 	scanOutput    string
 	scanVerbose   bool
+	scanPolicies  string
 )
 
 var scanCmd = &cobra.Command{
@@ -41,10 +45,12 @@ func init() {
 	scanCmd.Flags().IntVar(&scanThreshold, "threshold", models.DefaultThreshold, "risk score threshold for CI/CD failures (0-100)")
 	scanCmd.Flags().StringVar(&scanOutput, "output", models.OutputFormatTable, `output format ("table" or "json")`)
 	scanCmd.Flags().BoolVar(&scanVerbose, "verbose", false, "enable verbose logging")
+	scanCmd.Flags().StringVar(&scanPolicies, "policies", defaultPoliciesDir, "directory containing .rego policy files")
 
 	_ = viper.BindPFlag("scan.threshold", scanCmd.Flags().Lookup("threshold"))
 	_ = viper.BindPFlag("scan.output", scanCmd.Flags().Lookup("output"))
 	_ = viper.BindPFlag("scan.verbose", scanCmd.Flags().Lookup("verbose"))
+	_ = viper.BindPFlag("scan.policies", scanCmd.Flags().Lookup("policies"))
 }
 
 func runScan(cmd *cobra.Command, args []string) error {
@@ -73,14 +79,28 @@ func runScan(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	registry := analyzer.NewRegistry()
-	registry.Register(
-		analyzer.NewIAMAnalyzer(),
-		analyzer.NewNetworkAnalyzer(),
-		analyzer.NewStorageAnalyzer(),
-		analyzer.NewLoggingAnalyzer(),
-	)
-	findings := registry.AnalyzeBatch(result.Resources)
+	engine, err := policy.NewEngine(scanPolicies)
+	if err != nil {
+		return fmt.Errorf("load policies: %w", err)
+	}
+	var policyFindings []*policy.PolicyFinding
+	for _, resource := range result.Resources {
+		evaluated, err := engine.Evaluate(resource)
+		if err != nil {
+			return fmt.Errorf("evaluate policies: %w", err)
+		}
+		policyFindings = append(policyFindings, evaluated...)
+	}
+	corpus, err := engine.EvaluateCorpus(result.Resources)
+	if err != nil {
+		return fmt.Errorf("evaluate policies: %w", err)
+	}
+	policyFindings = append(policyFindings, corpus...)
+	findings, err := policy.ToFindings(policyFindings)
+	if err != nil {
+		return fmt.Errorf("convert findings: %w", err)
+	}
+	analyzer.SortFindings(findings)
 	analyzer.AssignIDs(findings)
 
 	switch opts.OutputFormat {
