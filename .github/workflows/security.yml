@@ -37,4 +37,4 @@ jobs:
 
       - run: go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
 
-      - run: govulncheck ./...
+      - run: ./scripts/govulncheck-gated.sh

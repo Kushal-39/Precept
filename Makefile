@@ -19,7 +19,7 @@ lint:
 
 security:
 	gosec -quiet ./...
-	govulncheck ./...
+	./scripts/govulncheck-gated.sh
 
 tidy:
 	go mod tidy
